@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-
-	"github.com/magefile/mage/mg"
 )
 
 // RunCmd returns a function that will call Run with the given command. This is
@@ -114,7 +112,7 @@ func Exec(ctx context.Context, env map[string]string, stdout, stderr io.Writer, 
 		return true, nil
 	}
 	if ran {
-		return ran, mg.Fatalf(code, `running "%s %s" failed with exit code %d`, cmd, strings.Join(args, " "), code)
+		return ran, Fatalf(code, `running "%s %s" failed with exit code %d`, cmd, strings.Join(args, " "), code)
 	}
 	return ran, fmt.Errorf(`failed to run "%s %s: %v"`, cmd, strings.Join(args, " "), err)
 }
