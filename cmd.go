@@ -96,6 +96,10 @@ func OutputWith(ctx context.Context, env map[string]string, cmd string, args ...
 // Code reports the exit code the command returned if it ran. If err == nil, ran
 // is always true and code is always 0.
 func Exec(ctx context.Context, env map[string]string, stdout, stderr io.Writer, cmd string, args ...string) (ran bool, err error) {
+	return ExecWithStdin(ctx, env, os.Stdin, stdout, stderr, cmd, args...)
+}
+
+func ExecWithStdin(ctx context.Context, env map[string]string, stdin io.Reader, stdout, stderr io.Writer, cmd string, args ...string) (ran bool, err error) {
 	expand := func(s string) string {
 		s2, ok := env[s]
 		if ok {
@@ -107,7 +111,7 @@ func Exec(ctx context.Context, env map[string]string, stdout, stderr io.Writer, 
 	for i := range args {
 		args[i] = os.Expand(args[i], expand)
 	}
-	ran, code, err := run(ctx, env, stdout, stderr, cmd, args...)
+	ran, code, err := run(ctx, env, stdin, stdout, stderr, cmd, args...)
 	if err == nil {
 		return true, nil
 	}
@@ -117,7 +121,7 @@ func Exec(ctx context.Context, env map[string]string, stdout, stderr io.Writer, 
 	return ran, fmt.Errorf(`failed to run "%s %s: %v"`, cmd, strings.Join(args, " "), err)
 }
 
-func run(ctx context.Context, env map[string]string, stdout, stderr io.Writer, cmd string, args ...string) (ran bool, code int, err error) {
+func run(ctx context.Context, env map[string]string, stdin io.Reader, stdout, stderr io.Writer, cmd string, args ...string) (ran bool, code int, err error) {
 	c := exec.CommandContext(ctx, cmd, args...)
 	c.Env = os.Environ()
 	for k, v := range env {
@@ -125,7 +129,7 @@ func run(ctx context.Context, env map[string]string, stdout, stderr io.Writer, c
 	}
 	c.Stderr = stderr
 	c.Stdout = stdout
-	c.Stdin = os.Stdin
+	c.Stdin = stdin
 
 	err = c.Run()
 	return CmdRan(err), ExitStatus(err), err
